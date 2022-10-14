@@ -1,11 +1,16 @@
-all:
-	gcc -w dberror.c storage_mgr.c buffer_mgr.c buffer_mgr_stat.c test_assign2_1.c -o test_assign2_1
-	./test_assign2_1
-
-test_case_clock:
-	gcc -w dberror.c buffer_mgr_stat.c storage_mgr.c buffer_mgr.c test_assign2_2.c -o test_assign2_2
-	./test_assign2_2
-
+buffer: test_assign2_1.o buffer_mgr.o storage_mgr.o dberror.o buffer_mgr_stat.o
+	gcc -o buffer test_assign2_1.o buffer_mgr.o storage_mgr.o dberror.o buffer_mgr_stat.o
+test_assign2_1.o: test_assign2_1.c
+	gcc -c test_assign2_1.c
+buffer_mgr.o: buffer_mgr.c
+	gcc -c buffer_mgr.c
+storage_mgr.o: storage_mgr.c
+	gcc -c storage_mgr.c
+dberror.o: dberror.c
+	gcc -c dberror.c
+buffer_mgr_stat.o: buffer_mgr_stat.c
+	gcc -c buffer_mgr_stat.c
+run: buffer
+	./buffer
 clean:
-	$(RM) test_assign2_1
-	$(RM) test_assign2_2
+	rm buffer test_assign2_1.o buffer_mgr.o storage_mgr.o dberror.o buffer_mgr_stat.o
