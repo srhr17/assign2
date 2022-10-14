@@ -60,13 +60,14 @@ void createBufferFrame(BufferManager *bufferManager)
 void CleanBufferPool(BufferManager *bufferManager, BM_BufferPool *bufferPool)
 {
 	int NumberofPages;
-	free(bufferManager);
 	bufferPool->pageFile = NULL;
 	bufferPool->mgmtData = NULL;
 	bufferPool->numPages = NumberofPages;
-	bufferManager->start;
-	bufferManager->head;
+	bufferManager->start = NULL;
+	bufferManager->head = NULL;
 	bufferManager->tail = NULL;
+	free(bufferManager);
+
 }
 
 bool CheckValidManagementData(BM_BufferPool *const bufferPool)
@@ -123,34 +124,6 @@ RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const
 
 /*
 Jason Scott - A20436737
-1. This method destroyes buffer pool
-2. Utilizes forceflush method to write all the dirtyPages back again, before destroying
-3. It frees up the buffer pool's resources
-*/
-RC shutdownBufferPool(BM_BufferPool *const bm)
-{
-	int i;
-
-	if (!CheckValidManagementData(bm))
-		return RC_BUFFER_POOL_NOT_INIT;
-	BufferManager *bufferManager = bm->mgmtData;
-	BufferFrame *frame = bufferManager->head;
-
-	forceFlushPool(bm);
-
-	frame = frame->nextFrame;
-	for (i=0; frame != bufferManager->head; i++)
-	{
-		free(frame->data);
-		frame = frame->nextFrame;
-	}
-	free(frame);
-	CleanBufferPool(bufferManager, bm);
-	return RC_OK;
-}
-
-/*
-Jason Scott - A20436737
 1. This method opens and checks for dirty pages
 2. All dirtypages with fix count zero are written to disk
 3. Writes it then closes before returning to method above to be destroyed
@@ -192,6 +165,35 @@ RC forceFlushPool(BM_BufferPool *const bm)
 	closePageFile(bufferManager->smFileHandle);
 	return RC_OK;
 }
+
+/*
+Jason Scott - A20436737
+1. This method destroyes buffer pool
+2. Utilizes forceflush method to write all the dirtyPages back again, before destroying
+3. It frees up the buffer pool's resources
+*/
+RC shutdownBufferPool(BM_BufferPool *const bm)
+{
+	int i;
+
+	if (!CheckValidManagementData(bm))
+		return RC_BUFFER_POOL_NOT_INIT;
+	BufferManager *bufferManager = bm->mgmtData;
+	BufferFrame *frame = bufferManager->head;
+
+	forceFlushPool(bm);
+
+	frame = frame->nextFrame;
+	for (i=0; frame != bufferManager->head; i++)
+	{
+		free(frame->data);
+		frame = frame->nextFrame;
+	}
+	free(frame);
+	CleanBufferPool(bufferManager, bm);
+	return RC_OK;
+}
+
 
 /* Darek Nowak A20497998
 //  1. Searches for given page
@@ -263,7 +265,7 @@ RC forcePage(BM_BufferPool *const bm, BM_PageHandle *const page)
 	bufferManager->smFileHandle = sm_fileHandle;
 
 	RC openpageReturnCode = openPageFile((char *)(bm->pageFile), bufferManager->smFileHandle);
-	if (openPageFile == RC_OK)
+	if (openpageReturnCode == RC_OK)
 	{
 		do
 		{
@@ -311,12 +313,13 @@ RC CheckIfPageExists(int algo, const PageNumber pageNum, BufferManager *bufferMa
 				bufferManager->tail = bufferManager->head->nextFrame;
 				bufferManager->head = frame;
 			}
-			value = 1;
+			value = 1;	
 			return RC_OK;
 		}
 	} while (frame != bufferManager->head);
 	if (value == 0)
 		return RC_IM_KEY_NOT_FOUND;
+	return RC_OK;
 }
 
 
